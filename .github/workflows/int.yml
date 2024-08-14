@@ -1,0 +1,45 @@
+name: int
+
+on:
+  push:
+    branches:
+     - '1.0.x'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name'
+        type: 'string'
+
+env:
+  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+  DOCKERHUB_PWD: ${{ secrets.DOCKERHUB_PWD }}
+  IMAGE: ${{ vars.IMAGE }}
+
+jobs:
+  InitVars:
+    runs-on: ubuntu-latest
+    outputs:
+      TAG_NAME: ${{ steps.vars.outputs.tag-name }}
+    steps:
+    - name: Init vars
+      id: vars
+      run: echo "tag-name=${{ inputs.tag_name || github.ref_name }}" >> $GITHUB_OUTPUT
+
+  CI:
+    runs-on: ubuntu-latest
+    needs: InitVars
+    steps:
+    - name: Docker Login
+      run: docker login -u ${{ env.DOCKERHUB_USER }} -p ${{ env.DOCKERHUB_PWD }}
+    - name: Build Docker Image
+      run: docker build -t ${{ env.DOCKERHUB_USER }}/${{ env.IMAGE }}:${{ needs.InitVars.outputs.TAG_NAME }} .
+    - name: Push Docker Image
+      run: docker image push ${{ env.DOCKERHUB_USER }}/${{ env.IMAGE }}:${{ needs.InitVars.outputs.TAG_NAME }}
+
+  CD:
+    runs-on: ubuntu-latest
+    needs: [InitVars, CI]
+    steps:
+    - name: Pull Docker Image
+      run: docker image pull ${{ env.DOCKERHUB_USER }}/${{ env.IMAGE }}:${{ needs.InitVars.outputs.TAG_NAME }}
+    
