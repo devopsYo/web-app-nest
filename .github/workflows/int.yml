@@ -32,7 +32,9 @@ jobs:
     - name: Docker Login
       run: docker login -u ${{ env.DOCKERHUB_USER }} -p ${{ env.DOCKERHUB_PWD }}
     - name: Build Docker Image
-      run: docker build -t ${{ env.DOCKERHUB_USER }}/${{ env.IMAGE }}:${{ needs.InitVars.outputs.TAG_NAME }} .
+      run: |
+        docker ls
+        docker build -t ${{ env.DOCKERHUB_USER }}/${{ env.IMAGE }}:${{ needs.InitVars.outputs.TAG_NAME }} .
     - name: Push Docker Image
       run: docker image push ${{ env.DOCKERHUB_USER }}/${{ env.IMAGE }}:${{ needs.InitVars.outputs.TAG_NAME }}
 
